@@ -15,13 +15,6 @@ impl MerkleTree {
         let arr = add_remaining_hashes(hashed_elements);
         Self { arr }
     }
-
-    // TODO: Delete this function. It is just for debugging.
-    pub fn print_arr(&self) {
-        for i in &self.arr {
-            println!("{:?}", i);
-        }
-    }
 }
 
 // TODO: Check if this way of concatenating the hashes is correct
@@ -70,7 +63,21 @@ mod tests {
 
     #[test]
     fn hash_depends_on_concat_order() {
+        // Declare our elements
+        let elem1 = String::from("Crypto");
+        let elem2 = String::from("Rust");
+        // Hash our elements
+        let hash_1  = hash_element(elem1);
+        let hash_2  = hash_element(elem2);
 
+        // Create the hash of the concatenation hash_1 + hash_2
+        let concat_12 = concatenate_elements(hash_1, hash_2);
+        let hash_12 = hash_element(concat_12);
+        // Create the hash of the concatenation hash_2 + hash_1
+        let concat_21 = concatenate_elements(hash_2, hash_1);
+        let hash_21 = hash_element(concat_21);
+
+        assert_ne!(hash_12, hash_21);
     }
 
     #[test]
