@@ -1,6 +1,7 @@
 use std::hash::{DefaultHasher, Hash, Hasher};
 
 type TreeStructure = Vec<Vec<u64>>;
+const BASE: i32 = 2;
 
 pub struct MerkleTree {
     arr: TreeStructure,
@@ -30,7 +31,15 @@ fn hash_element<T: Hash>(element: T) -> u64 {
 
 
 // TODO: Check if this function should be inside the impl
-fn calculate_elements_hashes<T: Hash>(elements: &Vec<T>) -> Vec<u64> {
+pub fn calculate_elements_hashes<T: Hash>(elements: &Vec<T>) -> Vec<u64> {
+    // TODO: Make this more readable
+    let exp = (elements.len() as f64).log2().ceil() as u32;
+    let diff = BASE.pow(exp) - elements.len() as i32;
+    if diff != 0 {
+        println!("La diff es {:?}", diff);
+        // Add the last 'diff' element to the elements vector
+    }
+
     elements.iter().map(|elem| {
         hash_element(elem)
     }).collect()
