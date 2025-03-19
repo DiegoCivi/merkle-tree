@@ -22,10 +22,6 @@ impl MerkleTree {
             println!("{:?}", i);
         }
     }
-
-    fn get_structure(&self) -> &TreeStructure {
-        &self.arr
-    }
 }
 
 // TODO: Check if this way of concatenating the hashes is correct
@@ -70,8 +66,6 @@ fn add_remaining_hashes(hashed_elements: Vec<u64>) -> Vec<Vec<u64>> {
 
 #[cfg(test)]
 mod tests {
-    use crate::merkle;
-
     use super::*;
 
     #[test]

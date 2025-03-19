@@ -1,5 +1,3 @@
-use std::hash::{DefaultHasher, Hash, Hasher};
-
 use merkle::MerkleTree;
 mod merkle;
 
