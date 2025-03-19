@@ -81,6 +81,16 @@ mod tests {
     }
 
     #[test]
+    fn creation_from_arrray_one_value() {
+        let data = vec!["Crypto"];
+        let merkle = MerkleTree::new(&data);
+
+        let elem0_hash = hash_element(data[0]);
+
+        assert_eq!(merkle.arr[0][0], elem0_hash);
+    }
+
+    #[test]
     fn creation_from_arrray() {
         let data = vec!["Crypto", "Merkle", "Rust", "Tree"];
         let merkle = MerkleTree::new(&data);
