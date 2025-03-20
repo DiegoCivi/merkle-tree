@@ -154,6 +154,15 @@ mod tests {
     }
 
     #[test]
+    fn extend_elements_repeats_last_one() {
+        let mut data = vec!["Crypto", "Merkle", "Rust"];
+        let expected_result = vec!["Crypto", "Merkle", "Rust", "Rust"];
+        extend_elements(&mut data);
+
+        assert_eq!(data, expected_result);
+    }
+
+    #[test]
     /// Test the case where the input array has only value
     /// 
     /// The creation of the Merkle Tree with an input array of only one value
