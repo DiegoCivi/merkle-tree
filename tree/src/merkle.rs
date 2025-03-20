@@ -310,4 +310,34 @@ mod tests {
 
         assert_eq!(merkle.arr[FIRST_LEVEL_I][last_i], merkle.arr[FIRST_LEVEL_I][penultimate_i]);
     }
+
+    #[test]
+    fn is_root_returns_true() {
+        let data = vec!["Crypto", "Merkle"];
+        let merkle = MerkleTree::new(data.clone());
+
+        // We manually get the root
+        let elem0_hash = hash_element(data[0]);
+        let elem1_hash = hash_element(data[1]);
+
+        let root_concatenation = concatenate_elements(elem0_hash, elem1_hash);
+        let desired_root = hash_element(root_concatenation);
+
+        assert!(merkle.is_root(desired_root));
+    }
+
+    #[test]
+    fn is_root_returns_false() {
+        let data = vec!["Crypto", "Merkle"];
+        let merkle = MerkleTree::new(data.clone());
+
+        // We manually get the root
+        let elem0_hash = hash_element(data[0]);
+        let elem1_hash = hash_element(data[1]);
+
+        let root_concatenation = concatenate_elements(elem0_hash, elem1_hash) + "x";
+        let wrong_root = hash_element(root_concatenation);
+
+        assert!(!merkle.is_root(wrong_root));
+    }
 }
