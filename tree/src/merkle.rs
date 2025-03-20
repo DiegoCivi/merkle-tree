@@ -1,37 +1,74 @@
 use std::hash::{DefaultHasher, Hash, Hasher};
 
-type TreeStructure = Vec<Vec<u64>>;
 const BASE: i32 = 2;
 
+type TreeStructure = Vec<Vec<u64>>;
+
+/// Abstraction of a Merkle Tree. The structure is represented
+/// as a vector of vectors. Each vector contains hashes and represents
+/// a level in the tree. This structure is used so as to follow
+/// the simple verification algorithm in this video:
+/// https://www.youtube.com/watch?v=n6nEPaE7KZ8
 pub struct MerkleTree {
     arr: TreeStructure,
 }
 
 impl MerkleTree {
 
+    /// Creates a new MerkleTree
+    /// 
+    /// ### Arguments
+    /// 
+    /// - `elements`: A vector with the elements that will be hashed and form the first level in the tree.
+    /// 
+    /// ### Returns
+    /// 
+    /// A MerkleTree instance 
     pub fn new<T: Hash + Clone>(elements: Vec<T>) -> Self {
         // TODO: Add support for vectors that have a len that is not a power of 2.
         // Hash every element of the array
-        let hashed_elements = calculate_elements_hashes(elements);
-        let arr = add_remaining_hashes(hashed_elements);
+        let hashed_elements = create_first_level(elements);
+        let arr = create_remaining_levels(hashed_elements);
         Self { arr }
     }
 }
 
-// TODO: Check if this way of concatenating the hashes is correct
-fn concatenate_elements(elem1: u64, elem2: u64) -> String {
+/// Concatenates to elements into one
+/// 
+/// ### Arguments
+/// 
+/// - `elem1`: An u64 that will be the first part of the concatenation.
+/// - `elem2`: An u64 that will be the second part of the concatenation.
+/// 
+/// ### Returns
+/// 
+/// A String thats the result of the concatenation fo the 2 elements
+fn concatenate_elements(elem1: u64, elem2: u64) -> String {// TODO: Check if this way of concatenating the hashes is correct
     elem1.to_string() + &elem2.to_string()
 }
 
+/// Hashes an element
+/// 
+/// ### Arguments
+/// 
+/// - `element`: An element that implements the trait Hash
+/// 
+/// ### Returns
+/// 
+/// An u64 that represents the hash of the element
 fn hash_element<T: Hash>(element: T) -> u64 {
     let mut hasher = DefaultHasher::new();
     element.hash(&mut hasher);
     hasher.finish()
 }
 
-
-// TODO: Check if this function should be inside the impl
-pub fn calculate_elements_hashes<T: Hash + Clone>(mut elements: Vec<T>) -> Vec<u64> {
+/// Extends the elements vector so it has a len of
+/// equal to a power of 2, if necessary
+/// 
+/// ### Arguments
+/// 
+/// - `elements`: A vector with the elements that will be hashed and form the first level in the tree
+fn extend_elements<T: Hash + Clone>(elements: &mut Vec<T>) { // TODO: Check if this function should be inside the impl
     // TODO: Make this more readable
     let exp = (elements.len() as f64).log2().ceil() as u32;
     let diff = BASE.pow(exp) - elements.len() as i32;
@@ -42,14 +79,40 @@ pub fn calculate_elements_hashes<T: Hash + Clone>(mut elements: Vec<T>) -> Vec<u
         let elements_slice = elements[temp..].to_vec();
         elements.extend(elements_slice);
     }
+}
 
+/// Creates the first level of the Merkle Tree.
+/// 
+/// Hashes all the input elements and adding repeated hashes 
+/// if the len is not equal to a power of 2.
+/// 
+/// ### Arguments
+/// 
+/// - `elements`: A vector with the elements that will be hashed and form the first level in the tree
+/// 
+/// ### Returns
+/// 
+/// A vector full of the hashes of the elements. This vector represents the first
+/// level of the Merkle Tree
+fn create_first_level<T: Hash + Clone>(mut elements: Vec<T>) -> Vec<u64> { // TODO: Check if this function should be inside the impl
+    extend_elements(&mut elements);
     elements.iter().map(|elem| {
         hash_element(elem)
     }).collect()
 }
 
-// TODO: Check if this function should be inside the impl
-fn add_remaining_hashes(hashed_elements: Vec<u64>) -> Vec<Vec<u64>> {
+/// Uses the first level of the tree to create the remaining levels.
+/// Each new level uses the one before.
+/// 
+/// ### Arguments
+/// 
+/// - `hashed_elements`: A vector full of hashes representing the first level of the tree
+/// 
+/// ### Returns
+/// 
+/// A vector of vectors with hashes. Each vector represents a level on the tree, 
+/// starting from the first to the last (the root).
+fn create_remaining_levels(hashed_elements: Vec<u64>) -> TreeStructure { // TODO: Check if this function should be inside the impl
     let mut arr = Vec::new();
     arr.push(hashed_elements.clone());
     let mut hashes = hashed_elements;
@@ -57,14 +120,10 @@ fn add_remaining_hashes(hashed_elements: Vec<u64>) -> Vec<Vec<u64>> {
         
         hashes = hashes.chunks(2).map(|chunk| {
             let concatenated = concatenate_elements(chunk[0], chunk[1]);
-            let temp = hash_element(concatenated);
-            println!("({:?} + {:?}) = {:?}", chunk[0], chunk[1], temp);
-            println!("****************");
-            temp
+            hash_element(concatenated)
         }).collect();
         arr.push(hashes.clone());
     }
-
     arr
 }
 

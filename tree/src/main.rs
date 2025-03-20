@@ -1,4 +1,5 @@
-use merkle::{calculate_elements_hashes, MerkleTree};
+use merkle::MerkleTree;
+
 mod merkle;
 
 
