@@ -67,7 +67,7 @@ fn hash_element<T: Hash>(element: T) -> u64 {
 /// 
 /// First we need to find the exponent that would give us
 /// a close value to the elements len. Once we have this, we
-/// can get the difference between the closes power of 2 and
+/// can get the difference between the closest power of 2 and
 /// the current len. That difference is the amount of repeated
 /// cells we have to add again to make the len of to be a
 /// power of 2.
@@ -122,8 +122,8 @@ fn create_first_level<T: Hash + Clone>(mut elements: Vec<T>) -> Vec<u64> { // TO
 fn create_remaining_levels(hashed_elements: Vec<u64>) -> TreeStructure { // TODO: Check if this function should be inside the impl
     // We create the vec that will contain each level of the tree.
     // Then we add the first level (the already hashed elements we have).
-    let mut vec = Vec::new();
-    vec.push(hashed_elements.clone());
+    let mut tree_structure = Vec::new();
+    tree_structure.push(hashed_elements.clone());
 
     // Each level creates the next level. So we iter each level by taking
     // chunks of size 2, concatenating this chunks and hashing the concatenation.
@@ -134,9 +134,9 @@ fn create_remaining_levels(hashed_elements: Vec<u64>) -> TreeStructure { // TODO
             let concatenated = concatenate_elements(chunk[0], chunk[1]);
             hash_element(concatenated)
         }).collect();
-        vec.push(hashes.clone());
+        tree_structure.push(hashes.clone());
     }
-    vec
+    tree_structure
 }
 
 
