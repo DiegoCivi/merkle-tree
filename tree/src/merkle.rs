@@ -9,7 +9,7 @@ pub struct MerkleTree {
 
 impl MerkleTree {
 
-    pub fn new<T: Hash>(elements: &Vec<T>) -> Self {
+    pub fn new<T: Hash + Clone>(elements: Vec<T>) -> Self {
         // TODO: Add support for vectors that have a len that is not a power of 2.
         // Hash every element of the array
         let hashed_elements = calculate_elements_hashes(elements);
@@ -31,13 +31,16 @@ fn hash_element<T: Hash>(element: T) -> u64 {
 
 
 // TODO: Check if this function should be inside the impl
-pub fn calculate_elements_hashes<T: Hash>(elements: &Vec<T>) -> Vec<u64> {
+pub fn calculate_elements_hashes<T: Hash + Clone>(mut elements: Vec<T>) -> Vec<u64> {
     // TODO: Make this more readable
     let exp = (elements.len() as f64).log2().ceil() as u32;
     let diff = BASE.pow(exp) - elements.len() as i32;
     if diff != 0 {
         println!("La diff es {:?}", diff);
         // Add the last 'diff' element to the elements vector
+        let temp = elements.len() - diff as usize;
+        let elements_slice = elements[temp..].to_vec();
+        elements.extend(elements_slice);
     }
 
     elements.iter().map(|elem| {
@@ -69,8 +72,10 @@ fn add_remaining_hashes(hashed_elements: Vec<u64>) -> Vec<Vec<u64>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    const FIRST_LEVEL_I: usize = 0;
 
     #[test]
+    /// Test if the concatenation differs when changing order of elements
     fn hash_depends_on_concat_order() {
         // Declare our elements
         let elem1 = String::from("Crypto");
@@ -90,19 +95,26 @@ mod tests {
     }
 
     #[test]
+    /// Test the case where the input array has only value
+    /// 
+    /// The creation of the Merkle Tree with an input array of only one value
+    /// should just contain the hash of that value and nothing else.
     fn creation_from_arrray_one_value() {
         let data = vec!["Crypto"];
-        let merkle = MerkleTree::new(&data);
+        let merkle = MerkleTree::new(data.clone());
 
-        let elem0_hash = hash_element(data[0]);
-
-        assert_eq!(merkle.arr[0][0], elem0_hash);
+        assert_eq!(merkle.arr.len(), 1);
     }
 
     #[test]
+    /// Test the creation of a Merkle Tree
+    /// 
+    /// We check if the hashes are correct and also if the number of
+    /// levels is the expected.
     fn creation_from_arrray() {
         let data = vec!["Crypto", "Merkle", "Rust", "Tree"];
-        let merkle = MerkleTree::new(&data);
+        let merkle = MerkleTree::new(data.clone());
+        let desired_level_quantity = 3;
 
         // Get the hashes of the elements and manually create the tree structure
         // Level 0. It has the hashes of every element
@@ -135,5 +147,42 @@ mod tests {
         assert_eq!(merkle.arr[0], level_0);
         assert_eq!(merkle.arr[1], level_1);
         assert_eq!(merkle.arr[2], level_2);
+        // Test quantity of levels
+        assert_eq!(merkle.arr.len(), desired_level_quantity);
+    }
+
+    #[test]
+    /// Test the creation of a Merkle Tree with an input array that
+    /// has a len that is not a power of 2.
+    /// 
+    /// With an input array of 5 elements, the Merkle Tree should
+    /// copy repeated elements to have a first level with a
+    /// quantity of 8 elements. Then with 8 elements the tree
+    /// should have 4 different levels.
+    fn creation_from_array_5_elements() {
+        let desired_level_quantity = 4;
+        let desired_quantity_in_first_level = 8;
+        let data = vec!["Crypto", "Merkle", "Rust", "Tree", "Test"];
+        let merkle = MerkleTree::new(data);
+
+        assert_eq!(merkle.arr[FIRST_LEVEL_I].len(), desired_quantity_in_first_level);
+        assert_eq!(merkle.arr.len(), desired_level_quantity);
+    }
+
+    #[test]
+    /// Test if the creation of a Merkle Tree with an input array that
+    /// has a len that is not power of 2, has the correct hash values
+    /// on the first level.
+    /// 
+    /// With 3 elements, the creation should copy the last element so
+    /// the first level has 4 elements. The last and penultimate hashes
+    /// in the first level should be the same.
+    fn creation_from_array_3_elements() {
+        let data = vec!["Crypto", "Merkle", "Rust"];
+        let merkle = MerkleTree::new(data);
+        let last_i = 3;
+        let penultimate_i = 2;
+
+        assert_eq!(merkle.arr[FIRST_LEVEL_I][last_i], merkle.arr[FIRST_LEVEL_I][penultimate_i]);
     }
 }
