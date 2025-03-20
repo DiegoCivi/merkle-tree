@@ -45,6 +45,7 @@ impl MerkleTree {
         }
     }
 
+
     pub fn contains(&self, mut hash_to_check: u64, mut hash_index: usize) -> bool {
         let mut proof_index: usize;
         let mut proof: u64;
@@ -334,10 +335,34 @@ mod tests {
         // We manually get the root
         let elem0_hash = hash_element(data[0]);
         let elem1_hash = hash_element(data[1]);
-
-        let root_concatenation = concatenate_elements(elem0_hash, elem1_hash) + "x";
+        // We add garbage to the concatenation so the hash changes
+        let garbage = "x";
+        let root_concatenation = concatenate_elements(elem0_hash, elem1_hash) + garbage;
         let wrong_root = hash_element(root_concatenation);
 
         assert!(!merkle.is_root(wrong_root));
+    }
+
+    #[test]
+    fn tree_contains_element_hash() {
+        let data = vec!["Crypto", "Merkle", "Rust", "Tree"];
+        let merkle = MerkleTree::new(data.clone());
+
+        let elem2_index = 2;
+        let elem2_hash = hash_element(data[elem2_index]);
+         
+        assert!(merkle.contains(elem2_hash, elem2_index));
+    }
+
+    #[test]
+    fn tree_does_not_contain_hash() {
+        let data = vec!["Crypto", "Merkle", "Rust", "Tree"];
+        let merkle = MerkleTree::new(data.clone());
+
+        let garbage = 5;
+        let elem2_index = 2;
+        let wrong_elem2_hash = hash_element(data[elem2_index]) + garbage;
+         
+        assert!(!merkle.contains(wrong_elem2_hash, elem2_index));
     }
 }
