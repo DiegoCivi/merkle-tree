@@ -55,7 +55,16 @@ impl MerkleTree {
         }
     }
 
-
+    /// Checks if the tree contains a hash
+    /// 
+    /// ### Arguments
+    /// 
+    /// - `hash_to_check`: The hash we want to know if it is contained in the tree.
+    /// - `hash_index`: The index of the element (from where the hash came) in the input array.
+    /// 
+    /// ### Returns
+    /// 
+    /// A bool that is true if the hash is contained in the tree at that index, false otherwise
     pub fn contains(&self, mut hash_to_check: u64, mut hash_index: usize) -> bool {
         let mut proof_index: usize;
         let mut proof: u64;
@@ -379,5 +388,18 @@ mod tests {
         let wrong_elem2_hash = hash_element(data[elem2_index]) + garbage;
          
         assert!(!merkle.contains(wrong_elem2_hash, elem2_index));
+    }
+
+    #[test]
+    /// Test if passing the wrong index makes it to not find the hash
+    fn contain_with_wrong_index() {
+        let data = vec!["Crypto", "Merkle", "Rust", "Tree"];
+        let merkle = MerkleTree::new(data.clone());
+
+        let elem2_index = 2;
+        let elem2_wrong_index = 3;
+        let elem2_hash = hash_element(data[elem2_index]);
+
+        assert!(!merkle.contains(elem2_hash, elem2_wrong_index));
     }
 }
