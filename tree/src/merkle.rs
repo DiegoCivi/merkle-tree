@@ -55,46 +55,38 @@ impl MerkleTree {
         }
     }
 
-    /// Checks if the tree contains a hash
+    /// Checks if the root of the tree can be obtained with the use of a proof, 
+    /// a leaf and its index on the input array.
     /// 
     /// ### Arguments
     /// 
-    /// - `hash_to_check`: The hash we want to know if it is contained in the tree.
-    /// - `hash_index`: The index of the element (from where the hash came) in the input array.
+    /// - `proofs`: A vector of hashes that make up the proof to get to the root.
+    /// - `leaf_index`: The index in the input array of the received leaf.
+    /// - `leaf`: The hash of one of the elements on the input array.
     /// 
     /// ### Returns
     /// 
-    /// A bool that is true if the hash is contained in the tree at that index, false otherwise
-    pub fn contains(&self, mut hash_to_check: u64, mut hash_index: usize) -> bool {
-        let mut proof_index: usize;
-        let mut proof: u64;
+    /// A bool that is true if the root can be obtained with that information, false otherwise
+    pub fn verify(&self, proofs: Vec<u64>, leaf_index: usize, leaf: u64) -> bool {
+        let mut hash_index = leaf_index;
+        let mut hash = leaf;
         let mut concatenation: String;
-        for level in &self.arr {
-            // If the len of the level is 1, it means we are at the root level.
-            // If we are at the root level, on the varibale hash_index we should have
-            // the root. So we don´t continue iterating.
-            if level.len() == 1 {
-                break;
-            }
+        for proof in &proofs {
 
             if hash_index % 2 == 0 {
                 // We know that if the index is even, the proof is on the right: hash + proof
-                proof_index = hash_index + 1;
-                proof = level[proof_index];
-                concatenation = concatenate_elements(hash_to_check, proof);
+                concatenation = concatenate_elements(hash, *proof);
             } else {
                 // We know that if the index is odd, the proof is on the left: proof + hash
-                proof_index = hash_index - 1;
-                proof = level[proof_index];
-                concatenation = concatenate_elements(proof, hash_to_check);
+                concatenation = concatenate_elements(*proof, hash);
             }
 
             // Get the new hash and update the index for the next level 
-            hash_to_check = hash_element(concatenation);
+            hash = hash_element(concatenation);
             hash_index /= 2;
         }
 
-        self.is_root(hash_to_check)
+        self.is_root(hash)
     }
 }
 
@@ -366,52 +358,76 @@ mod tests {
     }
 
     #[test]
-    /// Test if the tree contains a hash that is supposed to contain
-    fn tree_contains_element_hash() {
+    /// Test if the tree can verify a correct proof
+    fn tree_contains_proof() {
         let data = vec!["Crypto", "Merkle", "Rust", "Tree"];
         let merkle = MerkleTree::new(data.clone());
 
-        let elem2_index = 2;
-        let elem2_hash = hash_element(data[elem2_index]);
+        // Get the hashes of the elements and manually create the tree structure
+        // Level 0. It has the hashes of every element
+        let elem0_hash = hash_element(data[0]);
+        let elem1_hash = hash_element(data[1]);
+        let elem2_hash = hash_element(data[2]);
+        let elem3_hash = hash_element(data[3]);
+
+        // Create one of the proofs that we will be using:
+        // (elem2_hash + elem3_hash) = elem23_hash
+        let elem23 = concatenate_elements(elem2_hash, elem3_hash);
+        let elem23_hash = hash_element(elem23);
+
+        let proof = vec![elem0_hash, elem23_hash];
+        let elem1_index = 1;
          
-        assert!(merkle.contains(elem2_hash, elem2_index));
+        assert!(merkle.verify(proof, elem1_index, elem1_hash));
     }
 
     #[test]
-    /// Test if the tree contains a hash that is not supposed to contain
+    /// Test if the tree can verify an incorrect proof
     fn tree_does_not_contain_hash() {
         let data = vec!["Crypto", "Merkle", "Rust", "Tree"];
         let merkle = MerkleTree::new(data.clone());
 
-        let garbage = 5;
-        let elem2_index = 2;
-        let wrong_elem2_hash = hash_element(data[elem2_index]) + garbage;
+        // Get the hashes of the elements and manually create the tree structure
+        // Level 0. It has the hashes of every element
+        let elem0_hash = hash_element(data[0]);
+        let elem1_hash = hash_element(data[1]);
+        let elem2_hash = hash_element(data[2]);
+        let elem3_hash = hash_element(data[3]);
+
+        // Create one of the proofs that we will be using:
+        // (elem2_hash + elem3_hash) = elem23_hash
+        let garbage = "X";
+        let elem23 = concatenate_elements(elem2_hash, elem3_hash) + garbage;
+        let elem23_hash = hash_element(elem23);
+
+        let proof = vec![elem0_hash, elem23_hash];
+        let elem1_index = 1;
          
-        assert!(!merkle.contains(wrong_elem2_hash, elem2_index));
+        assert!(!merkle.verify(proof, elem1_index, elem1_hash));
     }
 
     #[test]
-    /// Test if passing the wrong index makes it to not find the hash
+    /// Test if passing the wrong index makes the varifying to fail
     fn contains_with_wrong_index() {
         let data = vec!["Crypto", "Merkle", "Rust", "Tree"];
         let merkle = MerkleTree::new(data.clone());
 
-        let elem2_index = 2;
-        let elem2_wrong_index = 3;
-        let elem2_hash = hash_element(data[elem2_index]);
+        // Get the hashes of the elements and manually create the tree structure
+        // Level 0. It has the hashes of every element
+        let elem0_hash = hash_element(data[0]);
+        let elem1_hash = hash_element(data[1]);
+        let elem2_hash = hash_element(data[2]);
+        let elem3_hash = hash_element(data[3]);
 
-        assert!(!merkle.contains(elem2_hash, elem2_wrong_index));
-    }
+        // Create one of the proofs that we will be using:
+        // (elem2_hash + elem3_hash) = elem23_hash
+        let garbage = "X";
+        let elem23 = concatenate_elements(elem2_hash, elem3_hash) + garbage;
+        let elem23_hash = hash_element(elem23);
 
-    #[test]
-    /// Test we can check if a hash is contained on a single value tree
-    fn contains_with_one_value_tree() {
-        let data = vec!["Crypto"];
-        let merkle = MerkleTree::new(data.clone());
-
-        let elem_index = 0;
-        let elem_hash = hash_element(data[elem_index]);
-
-        assert!(merkle.contains(elem_hash, elem_index));
+        let proof = vec![elem0_hash, elem23_hash];
+        let elem1_wrong_index = 2;
+         
+        assert!(!merkle.verify(proof, elem1_wrong_index, elem1_hash));
     }
 }
