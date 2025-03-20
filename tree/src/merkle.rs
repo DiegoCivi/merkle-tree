@@ -31,6 +31,16 @@ impl MerkleTree {
         Self { arr }
     }
 
+    /// Checks if the hash received is equal to the root of the tree
+    /// 
+    /// ### Arguments
+    /// 
+    /// - `hash_to_check`: A hash that will be compared with the root
+    /// 
+    /// ### Returns
+    /// 
+    /// If the hash is equal to the one of the root, then it returns true,
+    /// else false.
     fn is_root(&self, hash_to_check: u64) -> bool {
         self.arr.last().unwrap().last().unwrap();
 
@@ -313,6 +323,8 @@ mod tests {
     }
 
     #[test]
+    /// Test if the expected hash to be the root is actually the root 
+    /// of the tree.
     fn is_root_returns_true() {
         let data = vec!["Crypto", "Merkle"];
         let merkle = MerkleTree::new(data.clone());
@@ -328,6 +340,7 @@ mod tests {
     }
 
     #[test]
+    /// Test if a random hash is the root of the tree.
     fn is_root_returns_false() {
         let data = vec!["Crypto", "Merkle"];
         let merkle = MerkleTree::new(data.clone());
@@ -344,6 +357,7 @@ mod tests {
     }
 
     #[test]
+    /// Test if the tree contains a hash that is supposed to contain
     fn tree_contains_element_hash() {
         let data = vec!["Crypto", "Merkle", "Rust", "Tree"];
         let merkle = MerkleTree::new(data.clone());
@@ -355,6 +369,7 @@ mod tests {
     }
 
     #[test]
+    /// Test if the tree contains a hash that is not supposed to contain
     fn tree_does_not_contain_hash() {
         let data = vec!["Crypto", "Merkle", "Rust", "Tree"];
         let merkle = MerkleTree::new(data.clone());
