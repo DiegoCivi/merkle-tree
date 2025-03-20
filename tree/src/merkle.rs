@@ -392,7 +392,7 @@ mod tests {
 
     #[test]
     /// Test if passing the wrong index makes it to not find the hash
-    fn contain_with_wrong_index() {
+    fn contains_with_wrong_index() {
         let data = vec!["Crypto", "Merkle", "Rust", "Tree"];
         let merkle = MerkleTree::new(data.clone());
 
@@ -401,5 +401,17 @@ mod tests {
         let elem2_hash = hash_element(data[elem2_index]);
 
         assert!(!merkle.contains(elem2_hash, elem2_wrong_index));
+    }
+
+    #[test]
+    /// Test we can check if a hash is contained on a single value tree
+    fn contains_with_one_value_tree() {
+        let data = vec!["Crypto"];
+        let merkle = MerkleTree::new(data.clone());
+
+        let elem_index = 0;
+        let elem_hash = hash_element(data[elem_index]);
+
+        assert!(merkle.contains(elem_hash, elem_index));
     }
 }
