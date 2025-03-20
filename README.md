@@ -3,9 +3,9 @@ Implementation of a Merkle tree in Rust.
 
 # Why?
 
-The purpose of this project is to learn about the (Merkle Tree)[https://brilliant.org/wiki/merkle-tree/], a widely used structure in distributed systems for data verification, while implementing it.
+The purpose of this project is to learn about the Merkle Tree, a widely used structure in distributed systems for data verification, while implementing it.
 
-# Implemented
+# Implementations
 
 This implementation will support:
 - The Merkle Tree can be built out of an array.
@@ -16,3 +16,8 @@ This implementation will support:
 # Uses
 
 - Rust 1.85.0
+
+# References
+
+- Brilliant: https://brilliant.org/wiki/merkle-tree/
+- Smart Contract Programmer: https://www.youtube.com/watch?v=n6nEPaE7KZ8 
