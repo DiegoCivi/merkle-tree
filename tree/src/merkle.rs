@@ -65,18 +65,25 @@ fn hash_element<T: Hash>(element: T) -> u64 {
 /// Extends the elements vector so it has a len of
 /// equal to a power of 2, if necessary
 /// 
+/// First we need to find the exponent that would give us
+/// a close value to the elements len. Once we have this, we
+/// can get the difference between the closes power of 2 and
+/// the current len. That difference is the amount of repeated
+/// cells we have to add again to make the len of to be a
+/// power of 2.
+/// 
 /// ### Arguments
 /// 
 /// - `elements`: A vector with the elements that will be hashed and form the first level in the tree
 fn extend_elements<T: Hash + Clone>(elements: &mut Vec<T>) { // TODO: Check if this function should be inside the impl
-    // TODO: Make this more readable
+    // Find the exponent that would get us close to the len of the elements vector 
     let exp = (elements.len() as f64).log2().ceil() as u32;
+    // Get how much more elements we need to get to a power of 2 len
     let diff = BASE.pow(exp) - elements.len() as i32;
     if diff != 0 {
-        println!("La diff es {:?}", diff);
-        // Add the last 'diff' element to the elements vector
-        let temp = elements.len() - diff as usize;
-        let elements_slice = elements[temp..].to_vec();
+        // Add the last 'diff' elements to the elements vector
+        let index = elements.len() - diff as usize;
+        let elements_slice = elements[index..].to_vec();
         elements.extend(elements_slice);
     }
 }
@@ -113,18 +120,23 @@ fn create_first_level<T: Hash + Clone>(mut elements: Vec<T>) -> Vec<u64> { // TO
 /// A vector of vectors with hashes. Each vector represents a level on the tree, 
 /// starting from the first to the last (the root).
 fn create_remaining_levels(hashed_elements: Vec<u64>) -> TreeStructure { // TODO: Check if this function should be inside the impl
-    let mut arr = Vec::new();
-    arr.push(hashed_elements.clone());
+    // We create the vec that will contain each level of the tree.
+    // Then we add the first level (the already hashed elements we have).
+    let mut vec = Vec::new();
+    vec.push(hashed_elements.clone());
+
+    // Each level creates the next level. So we iter each level by taking
+    // chunks of size 2, concatenating this chunks and hashing the concatenation.
+    // This process creates the next level.
     let mut hashes = hashed_elements;
     while hashes.len() != 1 {
-        
         hashes = hashes.chunks(2).map(|chunk| {
             let concatenated = concatenate_elements(chunk[0], chunk[1]);
             hash_element(concatenated)
         }).collect();
-        arr.push(hashes.clone());
+        vec.push(hashes.clone());
     }
-    arr
+    vec
 }
 
 
