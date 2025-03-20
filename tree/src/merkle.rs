@@ -25,11 +25,56 @@ impl MerkleTree {
     /// 
     /// A MerkleTree instance 
     pub fn new<T: Hash + Clone>(elements: Vec<T>) -> Self {
-        // TODO: Add support for vectors that have a len that is not a power of 2.
         // Hash every element of the array
         let hashed_elements = create_first_level(elements);
         let arr = create_remaining_levels(hashed_elements);
         Self { arr }
+    }
+
+    fn is_root(&self, hash_to_check: u64) -> bool {
+        self.arr.last().unwrap().last().unwrap();
+
+        let root_level = match self.arr.last() {
+            Some(root_level) => root_level,
+            None => return false,
+        };
+
+        match root_level.last() {
+            Some(root) => *root == hash_to_check,
+            None => false,
+        }
+    }
+
+    pub fn contains(&self, mut hash_to_check: u64, mut hash_index: usize) -> bool {
+        let mut proof_index: usize;
+        let mut proof: u64;
+        let mut concatenation: String;
+        for level in &self.arr {
+            // If the len of the level is 1, it means we are at the root level.
+            // If we are at the root level, on the varibale hash_index we should have
+            // the root. So we don´t continue iterating.
+            if level.len() == 1 {
+                break;
+            }
+
+            if hash_index % 2 == 0 {
+                // We know that if the index is even, the proof is on the right: hash + proof
+                proof_index = hash_index + 1;
+                proof = level[proof_index];
+                concatenation = concatenate_elements(hash_to_check, proof);
+            } else {
+                // We know that if the index is odd, the proof is on the left: proof + hash
+                proof_index = hash_index - 1;
+                proof = level[proof_index];
+                concatenation = concatenate_elements(proof, hash_to_check);
+            }
+
+            // Get the new hash and update the index for the next level 
+            hash_to_check = hash_element(concatenation);
+            hash_index /= 2;
+        }
+
+        self.is_root(hash_to_check)
     }
 }
 
