@@ -88,6 +88,27 @@ impl MerkleTree {
 
         self.is_root(hash)
     }
+
+    pub fn generate_proof(&self, mut hash_index: usize) -> Vec<u64> {
+        let mut proof_hash: u64;
+        let mut proof = Vec::new();
+        for level in &self.arr {
+            // If we reach the root level we dont continue
+            // since the root does not go on the proof.
+            if level.len() == 1 {
+                break;
+            }
+
+            if hash_index % 2 == 0 {
+                proof_hash = level[hash_index + 1];
+            } else {
+                proof_hash = level[hash_index - 1];
+            }
+            proof.push(proof_hash);
+            hash_index /= 2;
+        }
+        proof
+    }
 }
 
 /// Concatenates to elements into one
@@ -429,5 +450,41 @@ mod tests {
         let elem1_wrong_index = 2;
          
         assert!(!merkle.verify(proof, elem1_wrong_index, elem1_hash));
+    }
+
+    #[test]
+    fn generate_right_proof() {
+        let data = vec!["Crypto", "Merkle", "Rust", "Tree"];
+        let merkle = MerkleTree::new(data.clone());
+        let proof = merkle.generate_proof(0);
+
+        // Get the hashes of the elements and manually create the tree structure
+        // Level 0. It has the hashes of every element
+        let elem0_hash = hash_element(data[0]);
+        let elem1_hash = hash_element(data[1]);
+        let elem2_hash = hash_element(data[2]);
+        let elem3_hash = hash_element(data[3]);
+
+        // Level 1. It has the hashes of:
+        // (elem0_hash + elem1_hash) = elem01_hash 
+        // (elem2_hash + elem3_hash) = elem23_hash
+        let elem01 = concatenate_elements(elem0_hash, elem1_hash);
+        let elem01_hash = hash_element(elem01);
+
+        let elem23 = concatenate_elements(elem2_hash, elem3_hash);
+        let elem23_hash = hash_element(elem23);
+
+        // Level 3. It only contains one hash which will be the root:
+        // (elem01_hash + elem23_hash) = root_hash
+        let root = concatenate_elements(elem01_hash, elem23_hash);
+        let root_hash = hash_element(root);
+
+        let desired_proof = vec![elem1_hash, elem23_hash];
+
+        assert_eq!(proof, desired_proof);
+
+        // With the proof we generate the root and we check
+        // if it is the correct one
+        
     }
 }
