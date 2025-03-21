@@ -221,7 +221,61 @@ fn create_remaining_levels(hashed_elements: Vec<u64>) -> TreeStructure { // TODO
 #[cfg(test)]
 mod tests {
     use super::*;
-    const FIRST_LEVEL_I: usize = 0;
+    const LEVEL_0: usize = 0;
+    const LEVEL_1: usize = 1;
+    const LEVEL_2: usize = 2;
+
+
+    /// Manually generates the tree structure while also generating a tree.
+    /// All with the same input array, which has 4 elements in total.
+    /// The structure should look like this:
+    /// 
+    ///             [
+    /// LEVEL 0         [elem0_hash, elem1_hash, elem2_hash, elem3_haash],
+    /// LEVEL 1         [elem01_hash, elem23_hash],
+    /// LEVEL 2         [elem0123_hash],
+    ///             ]
+    /// From this we can see how the level 0 contains every hash of the elements
+    /// while level 2 has the root.
+    /// 
+    fn manually_create_tree_hashes() -> (TreeStructure, MerkleTree) {
+        let data = vec!["Crypto", "Merkle", "Rust", "Tree"];
+        let mut tree = Vec::new();
+        let merkle = MerkleTree::new(data.clone());
+        // Get the hashes of the elements and manually create the tree structure
+        // Level 0. It has the hashes of every element
+        let elem0_hash = hash_element(data[0]);
+        let elem1_hash = hash_element(data[1]);
+        let elem2_hash = hash_element(data[2]);
+        let elem3_hash = hash_element(data[3]);
+
+        let level_0 = vec![elem0_hash, elem1_hash, elem2_hash, elem3_hash];
+
+        // Level 1. It has the hashes of:
+        // (elem0_hash + elem1_hash) = elem01_hash 
+        // (elem2_hash + elem3_hash) = elem23_hash
+        let elem01 = concatenate_elements(elem0_hash, elem1_hash);
+        let elem01_hash = hash_element(elem01);
+
+        let elem23 = concatenate_elements(elem2_hash, elem3_hash);
+        let elem23_hash = hash_element(elem23);
+
+        let level_1 = vec![elem01_hash, elem23_hash];
+
+        // Level 2. It only contains one hash which will be the root:
+        // (elem01_hash + elem23_hash) = root_hash
+        let root = concatenate_elements(elem01_hash, elem23_hash);
+        let root_hash = hash_element(root);
+
+        let level_2 = vec![root_hash];
+
+        // Push every level so we can have a manually created tree
+        tree.push(level_0);
+        tree.push(level_1);
+        tree.push(level_2);
+
+        (tree, merkle)
+    }
 
     #[test]
     /// Test if the concatenation differs when changing order of elements
@@ -268,43 +322,19 @@ mod tests {
     /// Test the creation of a Merkle Tree
     /// 
     /// We check if the hashes are correct and also if the number of
-    /// levels is the expected.
+    /// levels is the expected when creating a tree from an array of
+    /// 4 initial elements.
     fn creation_from_arrray() {
-        let data = vec!["Crypto", "Merkle", "Rust", "Tree"];
-        let merkle = MerkleTree::new(data.clone());
+        // We know that when we use an input array of 4 elements
+        // the quantity of levels should be 3.
         let desired_level_quantity = 3;
-
-        // Get the hashes of the elements and manually create the tree structure
-        // Level 0. It has the hashes of every element
-        let elem0_hash = hash_element(data[0]);
-        let elem1_hash = hash_element(data[1]);
-        let elem2_hash = hash_element(data[2]);
-        let elem3_hash = hash_element(data[3]);
-
-        let level_0 = vec![elem0_hash, elem1_hash, elem2_hash, elem3_hash];
-
-        // Level 1. It has the hashes of:
-        // (elem0_hash + elem1_hash) = elem01_hash 
-        // (elem2_hash + elem3_hash) = elem23_hash
-        let elem01 = concatenate_elements(elem0_hash, elem1_hash);
-        let elem01_hash = hash_element(elem01);
-
-        let elem23 = concatenate_elements(elem2_hash, elem3_hash);
-        let elem23_hash = hash_element(elem23);
-
-        let level_1 = vec![elem01_hash, elem23_hash];
-
-        // Level 3. It only contains one hash which will be the root:
-        // (elem01_hash + elem23_hash) = root_hash
-        let root = concatenate_elements(elem01_hash, elem23_hash);
-        let root_hash = hash_element(root);
-
-        let level_2 = vec![root_hash];
+       
+        let (manual_tree, merkle) = manually_create_tree_hashes();
 
         // Test every level
-        assert_eq!(merkle.arr[0], level_0);
-        assert_eq!(merkle.arr[1], level_1);
-        assert_eq!(merkle.arr[2], level_2);
+        assert_eq!(merkle.arr[0], manual_tree[0]);
+        assert_eq!(merkle.arr[1], manual_tree[1]);
+        assert_eq!(merkle.arr[2], manual_tree[2]);
         // Test quantity of levels
         assert_eq!(merkle.arr.len(), desired_level_quantity);
     }
@@ -323,7 +353,7 @@ mod tests {
         let data = vec!["Crypto", "Merkle", "Rust", "Tree", "Test"];
         let merkle = MerkleTree::new(data);
 
-        assert_eq!(merkle.arr[FIRST_LEVEL_I].len(), desired_quantity_in_first_level);
+        assert_eq!(merkle.arr[LEVEL_0].len(), desired_quantity_in_first_level);
         assert_eq!(merkle.arr.len(), desired_level_quantity);
     }
 
@@ -341,7 +371,7 @@ mod tests {
         let last_i = 3;
         let penultimate_i = 2;
 
-        assert_eq!(merkle.arr[FIRST_LEVEL_I][last_i], merkle.arr[FIRST_LEVEL_I][penultimate_i]);
+        assert_eq!(merkle.arr[LEVEL_0][last_i], merkle.arr[LEVEL_0][penultimate_i]);
     }
 
     #[test]
@@ -380,22 +410,23 @@ mod tests {
 
     #[test]
     /// Test if the tree can verify a correct proof
-    fn tree_contains_proof() {
+    fn tree_verifies_proof() {
         let data = vec!["Crypto", "Merkle", "Rust", "Tree"];
         let merkle = MerkleTree::new(data.clone());
 
-        // Get the hashes of the elements and manually create the tree structure
-        // Level 0. It has the hashes of every element
+        // Get the hashes of the elements manually.
+        // Level 0. It has the hashes of every element.
         let elem0_hash = hash_element(data[0]);
         let elem1_hash = hash_element(data[1]);
         let elem2_hash = hash_element(data[2]);
         let elem3_hash = hash_element(data[3]);
 
-        // Create one of the proofs that we will be using:
+        // Create one of the proof hashes that we will be using:
         // (elem2_hash + elem3_hash) = elem23_hash
         let elem23 = concatenate_elements(elem2_hash, elem3_hash);
         let elem23_hash = hash_element(elem23);
 
+        // Creation of the proof and the necessary index 
         let proof = vec![elem0_hash, elem23_hash];
         let elem1_index = 1;
          
@@ -404,11 +435,11 @@ mod tests {
 
     #[test]
     /// Test if the tree can verify an incorrect proof
-    fn tree_does_not_contain_hash() {
+    fn tree_cant_verify_wrong_proof() {
         let data = vec!["Crypto", "Merkle", "Rust", "Tree"];
         let merkle = MerkleTree::new(data.clone());
 
-        // Get the hashes of the elements and manually create the tree structure
+        // Get the hashes of the elements manually.
         // Level 0. It has the hashes of every element
         let elem0_hash = hash_element(data[0]);
         let elem1_hash = hash_element(data[1]);
@@ -429,7 +460,7 @@ mod tests {
 
     #[test]
     /// Test if passing the wrong index makes the varifying to fail
-    fn contains_with_wrong_index() {
+    fn verify_with_wrong_index() {
         let data = vec!["Crypto", "Merkle", "Rust", "Tree"];
         let merkle = MerkleTree::new(data.clone());
 
@@ -454,37 +485,39 @@ mod tests {
 
     #[test]
     fn generate_right_proof() {
-        let data = vec!["Crypto", "Merkle", "Rust", "Tree"];
-        let merkle = MerkleTree::new(data.clone());
-        let proof = merkle.generate_proof(0);
+        // let data = vec!["Crypto", "Merkle", "Rust", "Tree"];
+        // let merkle = MerkleTree::new(data.clone());
+        // let proof = merkle.generate_proof(0);
 
-        // Get the hashes of the elements and manually create the tree structure
-        // Level 0. It has the hashes of every element
-        let elem0_hash = hash_element(data[0]);
-        let elem1_hash = hash_element(data[1]);
-        let elem2_hash = hash_element(data[2]);
-        let elem3_hash = hash_element(data[3]);
+        // // Get the hashes of the elements and manually create the tree structure
+        // // Level 0. It has the hashes of every element
+        // let elem0_hash = hash_element(data[0]);
+        // let elem1_hash = hash_element(data[1]);
+        // let elem2_hash = hash_element(data[2]);
+        // let elem3_hash = hash_element(data[3]);
 
-        // Level 1. It has the hashes of:
-        // (elem0_hash + elem1_hash) = elem01_hash 
-        // (elem2_hash + elem3_hash) = elem23_hash
-        let elem01 = concatenate_elements(elem0_hash, elem1_hash);
-        let elem01_hash = hash_element(elem01);
+        // // Level 1. It has the hashes of:
+        // // (elem0_hash + elem1_hash) = elem01_hash 
+        // // (elem2_hash + elem3_hash) = elem23_hash
+        // let elem01 = concatenate_elements(elem0_hash, elem1_hash);
+        // let elem01_hash = hash_element(elem01);
 
-        let elem23 = concatenate_elements(elem2_hash, elem3_hash);
-        let elem23_hash = hash_element(elem23);
+        // let elem23 = concatenate_elements(elem2_hash, elem3_hash);
+        // let elem23_hash = hash_element(elem23);
 
-        // Level 3. It only contains one hash which will be the root:
-        // (elem01_hash + elem23_hash) = root_hash
-        let root = concatenate_elements(elem01_hash, elem23_hash);
-        let root_hash = hash_element(root);
+        // // Level 2. It only contains one hash which will be the root:
+        // // (elem01_hash + elem23_hash) = root_hash
+        // let root = concatenate_elements(elem01_hash, elem23_hash);
+        // let root_hash = hash_element(root);
+
+        let (manual_tree, merkle) = manually_create_tree_hashes();
+
+        let elem1_hash = manual_tree[0][1];
+        let elem23_hash = manual_tree[1][1];
 
         let desired_proof = vec![elem1_hash, elem23_hash];
+        let proof = merkle.generate_proof(0);
 
         assert_eq!(proof, desired_proof);
-
-        // With the proof we generate the root and we check
-        // if it is the correct one
-        
     }
 }
