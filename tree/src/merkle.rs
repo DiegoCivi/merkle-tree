@@ -109,6 +109,25 @@ impl MerkleTree {
         }
         proof
     }
+
+    pub fn add_element<T: Hash + Clone>(&mut self, new_elem: T) {
+        let curr_base_len = self.arr[0].len();
+        self.arr[0].push(hash_element(new_elem));
+        extend_elements(&mut self.arr[0]);
+        let new_base_section = self.arr[0][curr_base_len..].to_vec();
+        let subtree = create_remaining_levels(new_base_section);
+        
+        for i in 1..self.arr.len() {
+            self.arr[i].extend(subtree[i].clone());
+        }
+
+        // Create the new root
+        let last_level = self.arr.last().unwrap(); // TODO: Remove the unwrap
+        let concatenated_roots = concatenate_elements(last_level[0], last_level[1]);
+        let new_root = hash_element(concatenated_roots);
+        let new_root_level = vec![new_root];
+        self.arr.push(new_root_level);
+    }
 }
 
 /// Concatenates to elements into one
@@ -140,6 +159,14 @@ fn hash_element<T: Hash>(element: T) -> u64 {
     hasher.finish()
 }
 
+fn diff_to_power_of_2(num: f64) -> i32 {
+    // Find the exponent that would get us close to the len of the elements vector 
+    let exp = num.log2().ceil() as u32;
+    // Get how much more elements we need to get to a power of 2 len
+    let diff = BASE.pow(exp) - num as i32;
+    diff
+}
+
 /// Extends the elements vector so it has a len of
 /// equal to a power of 2, if necessary
 /// 
@@ -154,10 +181,7 @@ fn hash_element<T: Hash>(element: T) -> u64 {
 /// 
 /// - `elements`: A vector with the elements that will be hashed and form the first level in the tree
 fn extend_elements<T: Hash + Clone>(elements: &mut Vec<T>) { // TODO: Check if this function should be inside the impl
-    // Find the exponent that would get us close to the len of the elements vector 
-    let exp = (elements.len() as f64).log2().ceil() as u32;
-    // Get how much more elements we need to get to a power of 2 len
-    let diff = BASE.pow(exp) - elements.len() as i32;
+    let diff = diff_to_power_of_2(elements.len() as f64);
     if diff != 0 {
         // Add the last 'diff' elements to the elements vector
         let index = elements.len() - diff as usize;
