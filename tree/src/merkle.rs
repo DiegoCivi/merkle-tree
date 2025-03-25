@@ -527,4 +527,58 @@ mod tests {
 
         assert_eq!(proof, desired_proof);
     }
+
+    #[test]
+    /// Test if adding a new element creates a new level on the tree
+    /// 
+    /// If we start a Merkle Tree with an input array of 4 elements,
+    /// this will create a tree with 3 levels. If we add an element
+    /// the base level grows, creating a new level on the tree.
+    fn add_element_creates_new_level() {
+        let data = vec!["Crypto", "Merkle", "Rust", "Tree"];
+        let mut desired_merkle_levels = 3;
+        let mut merkle = MerkleTree::new(data);
+
+        assert_eq!(merkle.arr.len(), desired_merkle_levels);
+
+        merkle.add_element("Test");
+        desired_merkle_levels = 4;
+
+        assert_eq!(merkle.arr.len(), desired_merkle_levels);
+    }
+
+    #[test]
+    /// Test if adding a new element, doubles the quantity of
+    /// base elements.
+    /// 
+    /// If we start a Merkle Tree with an input array of 4 elements,
+    /// by adding an element we no longer have a base level with
+    /// a quantity that is a power of 2. So to have that again
+    /// we need to have repeated values. In this case, we should
+    /// end up having a base level with 8 elements.
+    fn add_element_doubles_base_elements() {
+        let data = vec!["Crypto", "Merkle", "Rust", "Tree"];
+        let mut desired_base_level_quantity = data.len();
+        let mut merkle = MerkleTree::new(data);
+
+        assert_eq!(merkle.arr[LEVEL_0].len(), desired_base_level_quantity);
+
+        merkle.add_element("Test");
+        desired_base_level_quantity *= 2;
+
+        assert_eq!(merkle.arr[LEVEL_0].len(), desired_base_level_quantity);
+    }
+
+    #[test]
+    fn add_element_creates_correct_hashes() {
+        let data = vec!["Crypto", "Merkle"];
+        let new_elem = "Rust";
+        let mut merkle = MerkleTree::new(data);
+
+        merkle.add_element(new_elem);
+        let new_elem_hash = hash_element(new_elem);
+
+        assert_eq!(merkle.arr[LEVEL_0][2], new_elem_hash);
+        assert_eq!(merkle.arr[LEVEL_0][3], new_elem_hash)
+    }
 }
