@@ -11,6 +11,7 @@ type TreeStructure = Vec<Vec<u64>>;
 /// https://www.youtube.com/watch?v=n6nEPaE7KZ8
 pub struct MerkleTree {
     arr: TreeStructure,
+    diff_elements: usize,
 }
 
 impl MerkleTree {
@@ -26,9 +27,10 @@ impl MerkleTree {
     /// A MerkleTree instance 
     pub fn new<T: Hash + Clone>(elements: Vec<T>) -> Self {
         // Hash every element of the array
+        let elements_len = elements.len();
         let hashed_elements = create_first_level(elements);
         let arr = create_remaining_levels(hashed_elements);
-        Self { arr }
+        Self { arr, diff_elements: elements_len }
     }
 
     /// Checks if the hash received is equal to the root of the tree
@@ -111,22 +113,63 @@ impl MerkleTree {
     }
 
     pub fn add_element<T: Hash + Clone>(&mut self, new_elem: T) {
-        let curr_base_len = self.arr[0].len();
-        self.arr[0].push(hash_element(new_elem));
-        extend_elements(&mut self.arr[0]);
-        let new_base_section = self.arr[0][curr_base_len..].to_vec();
-        let subtree = create_remaining_levels(new_base_section);
-        
-        for i in 1..self.arr.len() {
-            self.arr[i].extend(subtree[i].clone());
-        }
+        // We need to get how many different elements we have on the base level.
+        // If it is already a power of 2. We need to add duplicated elements to the base
+        // after adding the new element so the whole base level continues to have a len
+        // that is a power of 2.
 
-        // Create the new root
-        let last_level = self.arr.last().unwrap(); // TODO: Remove the unwrap
-        let concatenated_roots = concatenate_elements(last_level[0], last_level[1]);
-        let new_root = hash_element(concatenated_roots);
-        let new_root_level = vec![new_root];
-        self.arr.push(new_root_level);
+        let curr_base_len = self.diff_elements;
+        if diff_to_power_of_2(curr_base_len as f64) == 0 {
+            self.arr[0].push(hash_element(new_elem));
+            self.diff_elements += 1;
+            extend_elements(&mut self.arr[0]);
+            let new_base_section = self.arr[0][curr_base_len..].to_vec();
+            let subtree = create_remaining_levels(new_base_section);
+            for i in 1..self.arr.len() {
+                self.arr[i].extend(subtree[i].clone());
+            }
+
+            // Create the new root
+            let last_level = self.arr.last().unwrap(); // TODO: Remove the unwrap
+            let concatenated_roots = concatenate_elements(last_level[0], last_level[1]);
+            let new_root = hash_element(concatenated_roots);
+            let new_root_level = vec![new_root];
+            self.arr.push(new_root_level);
+        } else {
+            // We need to replace a repeated element with the new one
+            // and re-calculate the hashes that it affects.
+            let mut index = self.diff_elements;
+            self.diff_elements += 1;
+            let mut right_node: u64;
+            let mut left_node: u64;
+            let mut new_hash = hash_element(new_elem);
+            for level in &mut self.arr {
+                // Update the node with the new hash.
+                level[index] = new_hash;
+
+                // If we reached the root level and we already
+                // updated its value, we should not continue.
+                if level.len() == 1 {
+                    break;
+                }
+
+                if index % 2 == 0 { // We are on the left node
+                    left_node = level[index];
+                    right_node = level[index + 1];
+                } else { // We are on the right node
+                    right_node = level[index];
+                    left_node = level[index - 1];
+                }
+
+                // Create the new hash for the parent node
+                // that will be updated in the next iteration.
+                let concatenated = concatenate_elements(left_node, right_node);
+                new_hash = hash_element(concatenated);
+                // Update the index for the next iteration
+                index /= 2;
+
+            }
+        }
     }
 }
 
@@ -529,7 +572,8 @@ mod tests {
     }
 
     #[test]
-    /// Test if adding a new element creates a new level on the tree
+    /// Test if adding a new element in a tree that already has a base
+    /// level of 2^n different elements creates a new level on the tree
     /// 
     /// If we start a Merkle Tree with an input array of 4 elements,
     /// this will create a tree with 3 levels. If we add an element
@@ -548,7 +592,8 @@ mod tests {
     }
 
     #[test]
-    /// Test if adding a new element, doubles the quantity of
+    /// Test if adding a new element in a tree that already has a base
+    /// level of 2^n different elements, doubles the quantity of
     /// base elements.
     /// 
     /// If we start a Merkle Tree with an input array of 4 elements,
@@ -584,5 +629,29 @@ mod tests {
         assert_eq!(merkle.arr[LEVEL_0][2], new_elem_hash);
         assert_eq!(merkle.arr[LEVEL_0][3], new_elem_hash);
         assert!(!merkle.is_root(old_root));
+    }
+
+    #[test]
+    /// Test if adding an element when having repeated values on the base level
+    /// replaces the first repeated level to the new element and re-calculates
+    /// the necessary nodes.
+    /// 
+    /// When creating a tree with an input array of 3 elements, the last element will
+    /// be repeated on the base level so it can have a len that is a power of 2. However,
+    /// when adding a new element in this case it should replace the element that is
+    /// repeated and re-calculate a whole half of the tree, even the root.
+    fn add_element_replaces_repeated_element() {
+        let data = vec!["Crypto", "Merkle", "Rust"];
+        let mut merkle = MerkleTree::new(data);
+        let last_base_level_index = 3;
+        let last_hash_before_add = merkle.arr[LEVEL_0][last_base_level_index];
+
+        let new_element = String::from("Tree");
+        let new_element_hash = hash_element(new_element.clone());
+        merkle.add_element(new_element);
+        let last_hash_after_add = merkle.arr[LEVEL_0][last_base_level_index];
+
+        assert_eq!(last_hash_after_add, new_element_hash);
+        assert_ne!(last_hash_after_add, last_hash_before_add);
     }
 }
