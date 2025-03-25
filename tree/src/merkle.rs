@@ -112,63 +112,110 @@ impl MerkleTree {
         proof
     }
 
+    /// Adds an element to the tree
+    /// 
+    /// There are 2 cases to handle when adding an element to the tree.
+    /// First is the case when we add an element to a tree that already
+    /// has a base level that are all different elements. In this case we 
+    /// add the element and add other repeated elements to the base level
+    /// so it keeps a len that is a power of 2. By adding all this elements
+    /// we create a new subtree that will have the same width and height
+    /// as the original one. So all we have to do is create a new hash from
+    /// the old root and the new subtree root to create the new original
+    /// root.
+    /// 
+    /// The other possible case is when the base level has repeated values. 
+    /// This case is handled by replacing the first repeated value with 
+    /// the new element and re-calculating the part of the tree affected 
+    /// by this change.
     pub fn add_element<T: Hash + Clone>(&mut self, new_elem: T) {
-        // We need to get how many different elements we have on the base level.
-        // If it is already a power of 2. We need to add duplicated elements to the base
-        // after adding the new element so the whole base level continues to have a len
-        // that is a power of 2.
-
+        // Get how many different elements we have on the base level
         let curr_base_len = self.diff_elements;
-        if diff_to_power_of_2(curr_base_len as f64) == 0 {
-            self.arr[0].push(hash_element(new_elem));
-            self.diff_elements += 1;
-            extend_elements(&mut self.arr[0]);
+        if diff_to_power_of_2(curr_base_len as f64) == 0 { // The base level has 2^n different elements.
+            self.create_new_base_level(new_elem);
+            // Now we get the base level for the subtree
+            // and create it. This base level has the new 
+            // value added and then a bunch of repeated values.
             let new_base_section = self.arr[0][curr_base_len..].to_vec();
             let subtree = create_remaining_levels(new_base_section);
+            // After creating the new subtree, we unify it with 
+            // our original tree. This is done by combinating
+            // each level. (We start from level 1 since level 0
+            // was already compleated at the beginning)
             for i in 1..self.arr.len() {
                 self.arr[i].extend(subtree[i].clone());
             }
 
-            // Create the new root
-            let last_level = self.arr.last().unwrap(); // TODO: Remove the unwrap
+            // Create the new root.
+            // This is done by concatenating the roots of the new subtree and
+            // the one from the original tree.
+            let last_level = self.arr.last().unwrap();
             let concatenated_roots = concatenate_elements(last_level[0], last_level[1]);
             let new_root = hash_element(concatenated_roots);
+            // Add the new root level
             let new_root_level = vec![new_root];
             self.arr.push(new_root_level);
         } else {
             // We need to replace a repeated element with the new one
             // and re-calculate the hashes that it affects.
-            let mut index = self.diff_elements;
-            self.diff_elements += 1;
-            let mut right_node: u64;
-            let mut left_node: u64;
-            let mut new_hash = hash_element(new_elem);
-            for level in &mut self.arr {
-                // Update the node with the new hash.
-                level[index] = new_hash;
+            let new_hash = hash_element(new_elem);
+            self.replace_repeated_value(new_hash);
+        }
+    }
 
-                // If we reached the root level and we already
-                // updated its value, we should not continue.
-                if level.len() == 1 {
-                    break;
-                }
+    /// Creates a new base level by adding a new element.
+    /// 
+    /// By adding a new element to a level that has already
+    /// a len that is a power of 2, we lose that quality. So
+    /// we also have to add repeated values so we can get that
+    /// quality again.
+    fn create_new_base_level<T: Hash + Clone>(&mut self, new_elem: T) {
+        self.arr[0].push(hash_element(new_elem));
+        self.diff_elements += 1;
+        extend_elements(&mut self.arr[0]);
+    }
 
-                if index % 2 == 0 { // We are on the left node
-                    left_node = level[index];
-                    right_node = level[index + 1];
-                } else { // We are on the right node
-                    right_node = level[index];
-                    left_node = level[index - 1];
-                }
+    /// Replaces the first repeated value in the base level with
+    /// a new value.
+    /// 
+    /// The first repeated value is at self.diff_elements. In that position
+    /// we insert the new value. This makes it necessary to update some
+    /// hashes in the tree. That is why we iterate through each level
+    /// creating new hashes with the updated values.
+    /// 
+    /// ### Arguments
+    /// 
+    /// - `new_hash`: The hash of the new value to be inserted in the place of the repeated value.
+    fn replace_repeated_value(&mut self, mut new_hash: u64) {
+        let mut index = self.diff_elements; // Index of the first repeated value
+        self.diff_elements += 1;
+        let mut right_node: u64;
+        let mut left_node: u64;
+        for level in &mut self.arr {
+            // Update the node with the new hash.
+            level[index] = new_hash;
 
-                // Create the new hash for the parent node
-                // that will be updated in the next iteration.
-                let concatenated = concatenate_elements(left_node, right_node);
-                new_hash = hash_element(concatenated);
-                // Update the index for the next iteration
-                index /= 2;
-
+            // If we reached the root level and we already
+            // updated its value, we should not continue.
+            if level.len() == 1 {
+                break;
             }
+
+            if index % 2 == 0 { // We are on the left node
+                left_node = level[index];
+                right_node = level[index + 1];
+            } else { // We are on the right node
+                right_node = level[index];
+                left_node = level[index - 1];
+            }
+
+            // Create the new hash for the parent node
+            // that will be updated in the next iteration.
+            let concatenated = concatenate_elements(left_node, right_node);
+            new_hash = hash_element(concatenated);
+            // Update the index for the next iteration
+            index /= 2;
+
         }
     }
 }
@@ -528,7 +575,7 @@ mod tests {
     }
 
     #[test]
-    /// Test if passing the wrong index makes the varifying to fail
+    /// Test if passing the wrong index makes the verifying to fail
     fn verify_with_wrong_index() {
         let data = vec!["Crypto", "Merkle", "Rust", "Tree"];
         let merkle = MerkleTree::new(data.clone());
@@ -653,5 +700,32 @@ mod tests {
 
         assert_eq!(last_hash_after_add, new_element_hash);
         assert_ne!(last_hash_after_add, last_hash_before_add);
+    }
+
+    #[test]
+    /// Test if adding two elements and using both cases works as expected
+    /// 
+    /// We will have a tree that will be created from an input array of 3 elements.
+    /// This means that to have a base level of 2^n elements, the last one should
+    /// be repeated (so there aren't 2^n different elements). So when we add the 
+    /// first element, the repeated value located at the end of the base 
+    /// level should be replaced with the new value. After that we should have
+    /// a base level of 2^n different elements. So when we add a second element,
+    /// the other case should occur and we should end up with a base level that
+    /// will have 2 times the quantity of elements it has before.
+    fn add_2_elements() {
+        let data = vec!["Crypto", "Merkle", "Rust"];
+        let mut merkle = MerkleTree::new(data);
+        let desired_levels = 4;
+        let replaced_element_index = 3; // We had 3 initial elements. The fourth (index 3) should be the repeated one
+
+        let new_element_1 = String::from("Tree");
+        let new_element_1_hash = hash_element(new_element_1.clone());
+        let new_element_2 = String::from("Test");
+        merkle.add_element(new_element_1);
+        merkle.add_element(new_element_2);
+
+        assert_eq!(merkle.arr.len(), desired_levels);
+        assert_eq!(merkle.arr[LEVEL_0][replaced_element_index], new_element_1_hash);
     }
 }
