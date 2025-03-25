@@ -570,15 +570,19 @@ mod tests {
     }
 
     #[test]
+    /// Test if the base level elements are correct when adding a new element
+    /// in a tree that already has a base level of 2^n different elements
     fn add_element_creates_correct_hashes() {
         let data = vec!["Crypto", "Merkle"];
         let new_elem = "Rust";
         let mut merkle = MerkleTree::new(data);
+        let old_root = merkle.arr[1][0];
 
         merkle.add_element(new_elem);
         let new_elem_hash = hash_element(new_elem);
 
         assert_eq!(merkle.arr[LEVEL_0][2], new_elem_hash);
-        assert_eq!(merkle.arr[LEVEL_0][3], new_elem_hash)
+        assert_eq!(merkle.arr[LEVEL_0][3], new_elem_hash);
+        assert!(!merkle.is_root(old_root));
     }
 }
