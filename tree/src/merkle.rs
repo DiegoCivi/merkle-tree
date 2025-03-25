@@ -298,6 +298,8 @@ mod tests {
     }
 
     #[test]
+    /// Test if by passing an input array of 3 items we get one of 4
+    /// items with the last 2 being equal.
     fn extend_elements_repeats_last_one() {
         let mut data = vec!["Crypto", "Merkle", "Rust"];
         let expected_result = vec!["Crypto", "Merkle", "Rust", "Rust"];
@@ -332,9 +334,9 @@ mod tests {
         let (manual_tree, merkle) = manually_create_tree_hashes();
 
         // Test every level
-        assert_eq!(merkle.arr[0], manual_tree[0]);
-        assert_eq!(merkle.arr[1], manual_tree[1]);
-        assert_eq!(merkle.arr[2], manual_tree[2]);
+        assert_eq!(merkle.arr[LEVEL_0], manual_tree[LEVEL_0]);
+        assert_eq!(merkle.arr[LEVEL_1], manual_tree[LEVEL_1]);
+        assert_eq!(merkle.arr[LEVEL_2], manual_tree[LEVEL_2]);
         // Test quantity of levels
         assert_eq!(merkle.arr.len(), desired_level_quantity);
     }
@@ -484,36 +486,17 @@ mod tests {
     }
 
     #[test]
+    /// Test if the generation of proof works
+    /// 
+    /// By getting the manually created tree and the tree created with
+    /// our abstraction, we manually create what would be the correct proof
+    /// for the first element in the input array. We then check if the 
+    /// generated proof is equal to the one we manually created.  
     fn generate_right_proof() {
-        // let data = vec!["Crypto", "Merkle", "Rust", "Tree"];
-        // let merkle = MerkleTree::new(data.clone());
-        // let proof = merkle.generate_proof(0);
-
-        // // Get the hashes of the elements and manually create the tree structure
-        // // Level 0. It has the hashes of every element
-        // let elem0_hash = hash_element(data[0]);
-        // let elem1_hash = hash_element(data[1]);
-        // let elem2_hash = hash_element(data[2]);
-        // let elem3_hash = hash_element(data[3]);
-
-        // // Level 1. It has the hashes of:
-        // // (elem0_hash + elem1_hash) = elem01_hash 
-        // // (elem2_hash + elem3_hash) = elem23_hash
-        // let elem01 = concatenate_elements(elem0_hash, elem1_hash);
-        // let elem01_hash = hash_element(elem01);
-
-        // let elem23 = concatenate_elements(elem2_hash, elem3_hash);
-        // let elem23_hash = hash_element(elem23);
-
-        // // Level 2. It only contains one hash which will be the root:
-        // // (elem01_hash + elem23_hash) = root_hash
-        // let root = concatenate_elements(elem01_hash, elem23_hash);
-        // let root_hash = hash_element(root);
-
         let (manual_tree, merkle) = manually_create_tree_hashes();
 
-        let elem1_hash = manual_tree[0][1];
-        let elem23_hash = manual_tree[1][1];
+        let elem1_hash = manual_tree[LEVEL_0][1];
+        let elem23_hash = manual_tree[LEVEL_1][1];
 
         let desired_proof = vec![elem1_hash, elem23_hash];
         let proof = merkle.generate_proof(0);
