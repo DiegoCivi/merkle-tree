@@ -5,6 +5,12 @@ Implementation of a Merkle tree in Rust.
 
 The purpose of this project is to learn about the Merkle Tree, a widely used structure in distributed systems for data verification, while implementing it.
 
+# How?
+
+To run the main program you must run: ```make```
+
+To run the tests you must run ```make test```
+
 # Implementations
 
 This implementation will support:
@@ -21,3 +27,4 @@ This implementation will support:
 
 - Brilliant: https://brilliant.org/wiki/merkle-tree/
 - Smart Contract Programmer: https://www.youtube.com/watch?v=n6nEPaE7KZ8 
+- Decentralized Thoughts: https://decentralizedthoughts.github.io/2020-12-22-what-is-a-merkle-tree/
