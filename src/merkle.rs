@@ -70,6 +70,11 @@ impl MerkleTree {
     /// 
     /// A bool that is true if the root can be obtained with that information, false otherwise
     pub fn verify(&self, proofs: Vec<u64>, leaf_index: usize, leaf: u64) -> bool {
+        // If the index is equal or larger than the quantity of different elements
+        // it means that the index is invalid.
+        if leaf_index >= self.diff_elements {
+            return false;
+        }
         let mut hash_index = leaf_index;
         let mut hash = leaf;
         let mut concatenation: String;
@@ -91,7 +96,12 @@ impl MerkleTree {
         self.is_root(hash)
     }
 
-    pub fn generate_proof(&self, mut hash_index: usize) -> Vec<u64> {
+    pub fn generate_proof(&self, mut hash_index: usize) -> Option<Vec<u64>> {
+        // If the index is equal or larger than the quantity of different elements
+        // it means that the index is invalid.
+        if hash_index >= self.diff_elements {
+            return None;
+        }
         let mut proof_hash: u64;
         let mut proof = Vec::new();
         for level in &self.arr {
@@ -109,7 +119,7 @@ impl MerkleTree {
             proof.push(proof_hash);
             hash_index /= 2;
         }
-        proof
+        Some(proof)
     }
 
     /// Adds an element to the tree
@@ -613,7 +623,7 @@ mod tests {
         let elem23_hash = manual_tree[LEVEL_1][1];
 
         let desired_proof = vec![elem1_hash, elem23_hash];
-        let proof = merkle.generate_proof(0);
+        let proof = merkle.generate_proof(0).unwrap();
 
         assert_eq!(proof, desired_proof);
     }
