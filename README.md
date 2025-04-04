@@ -7,9 +7,17 @@ The purpose of this project is to learn about the Merkle Tree, a widely used str
 
 # How?
 
-To run the main program you must run: ```make```
+To run the main program you must run:
 
-To run the tests you must run ```make test```
+```sh
+make
+```
+
+To run the tests you must run
+
+```sh
+make test
+```
 
 # Implementations
 
