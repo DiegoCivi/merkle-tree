@@ -9,9 +9,12 @@ type TreeStructure = Vec<Vec<u64>>;
 /// a level in the tree. This structure is used so as to follow
 /// the simple verification algorithm in this video:
 /// https://www.youtube.com/watch?v=n6nEPaE7KZ8
+/// - `arr`: A vector of vectors will be the structure of our tree. Each vector is a level on it.
+/// - `diff_elements`:  Quantity of different elements in the base level. In the base level we could have repeated
+///                     elements that where pushed so it could reach a len that is a power of 2.
 pub struct MerkleTree {
-    arr: TreeStructure,
-    diff_elements: usize,
+    arr: TreeStructure,     // A vector of vectors will be the structure of our tree. Each vector is a level on it.
+    diff_elements: usize,   // Quantity of different elemn
 }
 
 impl MerkleTree {
@@ -259,6 +262,17 @@ fn hash_element<T: Hash>(element: T) -> u64 {
     hasher.finish()
 }
 
+/// Gets the difference between 'num' and the next closest number that is
+/// a power of 2
+/// 
+/// ### Arguments
+/// 
+/// - `num`: The number that we will use to get the next power of 2
+/// 
+/// ### Returns
+/// 
+/// An i32 that represents the difference that needs to be added so 'num'
+/// can reach the closes power of 2 (that is bigger than 'num')
 fn diff_to_power_of_2(num: f64) -> i32 {
     // Find the exponent that would get us close to the len of the elements vector 
     let exp = num.log2().ceil() as u32;
