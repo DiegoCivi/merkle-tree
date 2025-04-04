@@ -5,6 +5,12 @@ Implementation of a Merkle tree in Rust.
 
 The purpose of this project is to learn about the Merkle Tree, a widely used structure in distributed systems for data verification, while implementing it.
 
+# What?
+
+A Merkle Tree is a tree in which every leaf is a hash. Then, every node that is not a leaf is a hash of the concatenation of its child nodes.
+From this structure we get efficient and secure verification of large pieces of data. The use of this data structure is really broad and 
+can be used on the cryptography world or in Peer to Peer protocols like BitTorrent.
+
 # How?
 
 To run the main program you must run:
