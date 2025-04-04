@@ -47,8 +47,6 @@ impl MerkleTree {
     /// If the hash is equal to the one of the root, then it returns true,
     /// else false.
     fn is_root(&self, hash_to_check: u64) -> bool {
-        self.arr.last().unwrap().last().unwrap();
-
         let root_level = match self.arr.last() {
             Some(root_level) => root_level,
             None => return false,
