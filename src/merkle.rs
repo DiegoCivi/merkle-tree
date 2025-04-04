@@ -97,11 +97,11 @@ impl MerkleTree {
         self.is_root(hash)
     }
 
-    pub fn generate_proof(&self, mut hash_index: usize) -> Option<Vec<u64>> {
+    pub fn generate_proof(&self, mut hash_index: usize) -> Result<Vec<u64>, String> {
         // If the index is equal or larger than the quantity of different elements
         // it means that the index is invalid.
         if hash_index >= self.diff_elements {
-            return None;
+            return Err(String::from("Invalid index"));
         }
         let mut proof_hash: u64;
         let mut proof = Vec::new();
@@ -120,7 +120,7 @@ impl MerkleTree {
             proof.push(proof_hash);
             hash_index /= 2;
         }
-        Some(proof)
+        Ok(proof)
     }
 
     /// Adds an element to the tree
