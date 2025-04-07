@@ -97,6 +97,18 @@ impl MerkleTree {
         self.is_root(hash)
     }
 
+    /// Generates a Vector containing the hashes that together form the proof
+    /// for a specific element in the tree. With this proof and the hash of the element,
+    /// the tree's root can be obtained.
+    /// 
+    /// ### Arguments
+    /// 
+    /// - `hash_index`: The index of the element in the original input array
+    /// 
+    /// ### Returns
+    /// 
+    /// A Result that contains the vector with the hashes or an Error explaining
+    /// what was the problem 
     pub fn generate_proof(&self, mut hash_index: usize) -> Result<Vec<u64>, String> {
         // If the index is equal or larger than the quantity of different elements
         // it means that the index is invalid.
